@@ -31,7 +31,29 @@ public class GameManager : MonoBehaviour
     {
         Application.targetFrameRate = 60;
 
-        NewGame();
+        // Si se entra desde el menu directamente a 1-1 o 1-2,
+        // iniciamos las vidas sin forzar siempre el nivel 1.
+        if (lives <= 0)
+        {
+            lives = 3;
+            coins = 0;
+        }
+
+        DetectarNivelActual();
+    }
+
+    private void DetectarNivelActual()
+    {
+        string nombre = SceneManager.GetActiveScene().name;
+        string[] partes = nombre.Split('-');
+
+        if (partes.Length == 2 &&
+            int.TryParse(partes[0], out int mundoActual) &&
+            int.TryParse(partes[1], out int nivelActual))
+        {
+            world = mundoActual;
+            stage = nivelActual;
+        }
     }
 
     public void NewGame()
@@ -94,5 +116,4 @@ public class GameManager : MonoBehaviour
     {
         lives++;
     }
-
 }
