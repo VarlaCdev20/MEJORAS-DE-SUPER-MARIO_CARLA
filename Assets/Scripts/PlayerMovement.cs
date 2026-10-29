@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerMovement : MonoBehaviour
@@ -10,9 +11,17 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 velocity;
     private float inputAxis;
 
+    private float coyoteCounter;
+    private float jumpBufferCounter;
+
     public float moveSpeed = 8f;
     public float maxJumpHeight = 5f;
     public float maxJumpTime = 1f;
+
+    [Header("Ayudas para los obstaculos")]
+    public float coyoteTime = 0.12f;
+    public float jumpBufferTime = 0.12f;
+
     public float jumpForce => (2f * maxJumpHeight) / (maxJumpTime / 2f);
     public float gravity => (-2f * maxJumpHeight) / Mathf.Pow(maxJumpTime / 2f, 2f);
 
@@ -24,9 +33,25 @@ public class PlayerMovement : MonoBehaviour
 
     private void Awake()
     {
-        camera = Camera.main;
         rigidbody = GetComponent<Rigidbody2D>();
         collider = GetComponent<Collider2D>();
+        BuscarCamara();
+
+        // En el nivel 2 damos un poco mas de margen para superar
+        // los bloques y desniveles sin cambiar la sensacion de Mario.
+        if (SceneManager.GetActiveScene().name == "1-2")
+        {
+            maxJumpHeight = Mathf.Max(maxJumpHeight, 5.6f);
+            moveSpeed = Mathf.Max(moveSpeed, 8.25f);
+        }
+    }
+
+    private void BuscarCamara()
+    {
+        camera = Camera.main;
+
+        if (camera == null)
+            camera = FindFirstObjectByType<Camera>();
     }
 
     private void OnEnable()
@@ -35,6 +60,8 @@ public class PlayerMovement : MonoBehaviour
         collider.enabled = true;
         velocity = Vector2.zero;
         jumping = false;
+        coyoteCounter = 0f;
+        jumpBufferCounter = 0f;
     }
 
     private void OnDisable()
@@ -51,67 +78,89 @@ public class PlayerMovement : MonoBehaviour
 
         grounded = rigidbody.Raycast(Vector2.down);
 
-        if (grounded) {
-            GroundedMovement();
-        }
+        if (grounded)
+            coyoteCounter = coyoteTime;
+        else
+            coyoteCounter -= Time.deltaTime;
 
+        if (Input.GetButtonDown("Jump"))
+            jumpBufferCounter = jumpBufferTime;
+        else
+            jumpBufferCounter -= Time.deltaTime;
+
+        GroundedMovement();
         ApplyGravity();
     }
 
     private void FixedUpdate()
     {
-        // move mario based on his velocity
         Vector2 position = rigidbody.position;
         position += velocity * Time.fixedDeltaTime;
 
-        // clamp within the screen bounds
-        Vector2 leftEdge = camera.ScreenToWorldPoint(Vector2.zero);
-        Vector2 rightEdge = camera.ScreenToWorldPoint(new Vector2(Screen.width, Screen.height));
-        position.x = Mathf.Clamp(position.x, leftEdge.x + 0.5f, rightEdge.x - 0.5f);
+        if (camera == null)
+            BuscarCamara();
+
+        if (camera != null)
+        {
+            Vector2 leftEdge = camera.ScreenToWorldPoint(Vector2.zero);
+            Vector2 rightEdge = camera.ScreenToWorldPoint(new Vector2(Screen.width, Screen.height));
+            position.x = Mathf.Clamp(position.x, leftEdge.x + 0.5f, rightEdge.x - 0.5f);
+        }
 
         rigidbody.MovePosition(position);
     }
 
     private void HorizontalMovement()
     {
-        // accelerate / decelerate
         inputAxis = Input.GetAxis("Horizontal");
-        velocity.x = Mathf.MoveTowards(velocity.x, inputAxis * moveSpeed, moveSpeed * Time.deltaTime);
 
-        // check if running into a wall
-        if (rigidbody.Raycast(Vector2.right * velocity.x)) {
+        float velocidadObjetivo = inputAxis * moveSpeed;
+        float aceleracion = grounded ? moveSpeed * 1.15f : moveSpeed * 0.85f;
+
+        velocity.x = Mathf.MoveTowards(
+            velocity.x,
+            velocidadObjetivo,
+            aceleracion * Time.deltaTime
+        );
+
+        if (Mathf.Abs(velocity.x) > 0.05f &&
+            rigidbody.Raycast(Vector2.right * Mathf.Sign(velocity.x)))
+        {
             velocity.x = 0f;
         }
 
-        // flip sprite to face direction
-        if (velocity.x > 0f) {
+        if (velocity.x > 0f)
             transform.eulerAngles = Vector3.zero;
-        } else if (velocity.x < 0f) {
+        else if (velocity.x < 0f)
             transform.eulerAngles = new Vector3(0f, 180f, 0f);
-        }
     }
 
     private void GroundedMovement()
     {
-        // prevent gravity from infinitly building up
-        velocity.y = Mathf.Max(velocity.y, 0f);
-        jumping = velocity.y > 0f;
+        if (grounded)
+        {
+            velocity.y = Mathf.Max(velocity.y, 0f);
+            jumping = velocity.y > 0f;
+        }
 
-        // perform jump
-        if (Input.GetButtonDown("Jump"))
+        // Coyote time + jump buffer:
+        // permite saltar unas fracciones de segundo despues de dejar
+        // una plataforma y tambien registrar el salto un poco antes de caer.
+        if (jumpBufferCounter > 0f && coyoteCounter > 0f)
         {
             velocity.y = jumpForce;
             jumping = true;
+
+            jumpBufferCounter = 0f;
+            coyoteCounter = 0f;
         }
     }
 
     private void ApplyGravity()
     {
-        // check if falling
-        bool falling = velocity.y < 0f || !Input.GetButton("Jump");
-        float multiplier = falling ? 2f : 1f;
+        bool fallingNow = velocity.y < 0f || !Input.GetButton("Jump");
+        float multiplier = fallingNow ? 2f : 1f;
 
-        // apply gravity and terminal velocity
         velocity.y += gravity * multiplier * Time.deltaTime;
         velocity.y = Mathf.Max(velocity.y, gravity / 2f);
     }
@@ -120,7 +169,6 @@ public class PlayerMovement : MonoBehaviour
     {
         if (collision.gameObject.layer == LayerMask.NameToLayer("Enemy"))
         {
-            // bounce off enemy head
             if (transform.DotTest(collision.transform, Vector2.down))
             {
                 velocity.y = jumpForce / 2f;
@@ -129,11 +177,8 @@ public class PlayerMovement : MonoBehaviour
         }
         else if (collision.gameObject.layer != LayerMask.NameToLayer("PowerUp"))
         {
-            // stop vertical movement if mario bonks his head
-            if (transform.DotTest(collision.transform, Vector2.up)) {
+            if (transform.DotTest(collision.transform, Vector2.up))
                 velocity.y = 0f;
-            }
         }
     }
-
 }
