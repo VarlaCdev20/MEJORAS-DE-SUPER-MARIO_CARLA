@@ -8,28 +8,47 @@ public class Pipe : MonoBehaviour
     public Vector3 enterDirection = Vector3.down;
     public Vector3 exitDirection = Vector3.zero;
 
+    private bool usandoTuberia;
+
     private void OnTriggerStay2D(Collider2D other)
     {
-        if (connection != null && other.CompareTag("Player"))
-        {
-            if (Input.GetKey(enterKeyCode)) {
-                StartCoroutine(Enter(other.transform));
-            }
-        }
+        if (usandoTuberia || connection == null || !other.CompareTag("Player"))
+            return;
+
+        if (Input.GetKey(enterKeyCode))
+            StartCoroutine(Enter(other.transform));
     }
 
     private IEnumerator Enter(Transform player)
     {
-        player.GetComponent<PlayerMovement>().enabled = false;
+        usandoTuberia = true;
+
+        PlayerMovement movimiento = player.GetComponent<PlayerMovement>();
+
+        if (movimiento != null)
+            movimiento.enabled = false;
 
         Vector3 enteredPosition = transform.position + enterDirection;
         Vector3 enteredScale = Vector3.one * 0.5f;
 
         yield return Move(player, enteredPosition, enteredScale);
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(0.55f);
 
-        var sideSrolling = Camera.main.GetComponent<SideScrolling>();
-        sideSrolling.SetUnderground(connection.position.y < sideSrolling.undergroundThreshold);
+        Camera camara = Camera.main;
+
+        if (camara == null)
+            camara = FindFirstObjectByType<Camera>();
+
+        if (camara != null)
+        {
+            SideScrolling sideScrolling = camara.GetComponent<SideScrolling>();
+
+            if (sideScrolling != null)
+            {
+                bool vaSubterraneo = connection.position.y < sideScrolling.undergroundThreshold;
+                sideScrolling.SetUnderground(vaSubterraneo);
+            }
+        }
 
         if (exitDirection != Vector3.zero)
         {
@@ -42,30 +61,32 @@ public class Pipe : MonoBehaviour
             player.localScale = Vector3.one;
         }
 
-        player.GetComponent<PlayerMovement>().enabled = true;
+        if (movimiento != null)
+            movimiento.enabled = true;
+
+        usandoTuberia = false;
     }
 
     private IEnumerator Move(Transform player, Vector3 endPosition, Vector3 endScale)
     {
         float elapsed = 0f;
-        float duration = 1f;
+        float duration = 0.75f;
 
         Vector3 startPosition = player.position;
         Vector3 startScale = player.localScale;
 
         while (elapsed < duration)
         {
-            float t = elapsed / duration;
+            float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
 
             player.position = Vector3.Lerp(startPosition, endPosition, t);
             player.localScale = Vector3.Lerp(startScale, endScale, t);
-            elapsed += Time.deltaTime;
 
+            elapsed += Time.deltaTime;
             yield return null;
         }
 
         player.position = endPosition;
         player.localScale = endScale;
     }
-
 }
