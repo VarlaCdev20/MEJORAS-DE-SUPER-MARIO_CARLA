@@ -33,7 +33,20 @@ public class MenuInicio : MonoBehaviour
 
         if (Application.CanStreamedLevelBeLoaded(escena))
         {
-            SceneManager.LoadScene(escena, LoadSceneMode.Single);
+        {
+            string[] partes = escena.Split('-');
+            if (GameManager.Instance != null &&
+                partes.Length == 2 &&
+                int.TryParse(partes[0], out int mundo) &&
+                int.TryParse(partes[1], out int nivel))
+            {
+                GameManager.Instance.IniciarPartida(mundo, nivel);
+            }
+            else
+            {
+                SceneManager.LoadScene(escena, LoadSceneMode.Single);
+            }
+        }
         }
         else
         {
