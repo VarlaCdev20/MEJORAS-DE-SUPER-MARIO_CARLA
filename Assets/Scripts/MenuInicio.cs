@@ -6,6 +6,7 @@ public class MenuInicio : MonoBehaviour
     private GUIStyle titulo;
     private GUIStyle sombraTitulo;
     private GUIStyle subtitulo;
+    private GUIStyle etiqueta;
     private GUIStyle botonRojo;
     private GUIStyle botonVerde;
     private GUIStyle botonSalir;
@@ -13,6 +14,7 @@ public class MenuInicio : MonoBehaviour
 
     private Texture2D cielo;
     private Texture2D panel;
+    private Texture2D panelSecundario;
     private Texture2D rojo;
     private Texture2D rojoHover;
     private Texture2D verde;
@@ -22,24 +24,27 @@ public class MenuInicio : MonoBehaviour
     private Texture2D nube;
     private Texture2D suelo;
     private Texture2D bloque;
+    private Texture2D amarillo;
 
     private void Awake()
     {
-        cielo = CrearColor(new Color(0.22f, 0.58f, 0.95f));
-        panel = CrearColor(new Color(0.08f, 0.12f, 0.22f, 0.94f));
+        cielo = CrearColor(new Color(0.20f, 0.55f, 0.94f));
+        panel = CrearColor(new Color(0.06f, 0.08f, 0.16f, 0.96f));
+        panelSecundario = CrearColor(new Color(0.10f, 0.14f, 0.25f, 0.96f));
 
-        rojo = CrearColor(new Color(0.78f, 0.12f, 0.10f));
-        rojoHover = CrearColor(new Color(0.96f, 0.22f, 0.16f));
+        rojo = CrearColor(new Color(0.78f, 0.10f, 0.08f));
+        rojoHover = CrearColor(new Color(0.97f, 0.22f, 0.14f));
 
-        verde = CrearColor(new Color(0.10f, 0.58f, 0.20f));
-        verdeHover = CrearColor(new Color(0.16f, 0.78f, 0.28f));
+        verde = CrearColor(new Color(0.08f, 0.55f, 0.18f));
+        verdeHover = CrearColor(new Color(0.14f, 0.76f, 0.25f));
 
-        gris = CrearColor(new Color(0.22f, 0.24f, 0.28f));
-        grisHover = CrearColor(new Color(0.35f, 0.38f, 0.44f));
+        gris = CrearColor(new Color(0.20f, 0.22f, 0.27f));
+        grisHover = CrearColor(new Color(0.34f, 0.37f, 0.44f));
 
-        nube = CrearColor(new Color(1f, 1f, 1f, 0.92f));
-        suelo = CrearColor(new Color(0.48f, 0.23f, 0.08f));
-        bloque = CrearColor(new Color(0.96f, 0.66f, 0.08f));
+        nube = CrearColor(new Color(1f, 1f, 1f, 0.94f));
+        suelo = CrearColor(new Color(0.47f, 0.22f, 0.07f));
+        bloque = CrearColor(new Color(0.95f, 0.62f, 0.05f));
+        amarillo = CrearColor(new Color(1f, 0.82f, 0.08f));
     }
 
     private Texture2D CrearColor(Color color)
@@ -55,54 +60,67 @@ public class MenuInicio : MonoBehaviour
         PrepararEstilos();
         DibujarFondo();
 
-        float ancho = Mathf.Min(500f, Screen.width * 0.80f);
-        float altoPanel = Mathf.Min(490f, Screen.height * 0.72f);
+        float ancho = Mathf.Min(560f, Screen.width * 0.82f);
+        float altoPanel = Mathf.Min(535f, Screen.height * 0.78f);
         float x = (Screen.width - ancho) * 0.5f;
-        float y = Screen.height * 0.12f;
+        float y = Mathf.Max(38f, Screen.height * 0.08f);
+
+        float flotacion = Mathf.Sin(Time.unscaledTime * 1.8f) * 3f;
 
         GUI.DrawTexture(
-            new Rect(x - 35f, y, ancho + 70f, altoPanel),
+            new Rect(x - 38f, y + flotacion, ancho + 76f, altoPanel),
             panel
         );
 
+        GUI.DrawTexture(
+            new Rect(x + ancho * 0.31f, y + 16f + flotacion, ancho * 0.38f, 34f),
+            amarillo
+        );
+
         GUI.Label(
-            new Rect(x + 4f, y + 30f, ancho, 78f),
+            new Rect(x + ancho * 0.31f, y + 16f + flotacion, ancho * 0.38f, 34f),
+            "CARLA EDITION",
+            etiqueta
+        );
+
+        GUI.Label(
+            new Rect(x + 5f, y + 55f + flotacion, ancho, 82f),
             "SUPER MARIO",
             sombraTitulo
         );
 
         GUI.Label(
-            new Rect(x, y + 25f, ancho, 78f),
+            new Rect(x, y + 49f + flotacion, ancho, 82f),
             "SUPER MARIO",
             titulo
         );
 
         GUI.Label(
-            new Rect(x, y + 100f, ancho, 44f),
-            "MEJORAS DE CARLA",
+            new Rect(x, y + 126f + flotacion, ancho, 42f),
+            "ELIGE TU AVENTURA",
             subtitulo
         );
 
-        float botonY = y + 175f;
+        float tarjetaY = y + 185f + flotacion;
+
+        DibujarTarjeta(
+            new Rect(x, tarjetaY, ancho, 92f),
+            "NIVEL 1",
+            "Mundo clasico",
+            botonRojo,
+            IrNivel1
+        );
+
+        DibujarTarjeta(
+            new Rect(x, tarjetaY + 108f, ancho, 92f),
+            "NIVEL 2",
+            "Subterraneo",
+            botonVerde,
+            IrNivel2
+        );
 
         if (GUI.Button(
-            new Rect(x, botonY, ancho, 66f),
-            "NIVEL 1  -  MUNDO CLASICO",
-            botonRojo))
-        {
-            IrNivel1();
-        }
-
-        if (GUI.Button(
-            new Rect(x, botonY + 88f, ancho, 66f),
-            "NIVEL 2  -  SUBTERRANEO",
-            botonVerde))
-        {
-            IrNivel2();
-        }
-
-        if (GUI.Button(
-            new Rect(x + ancho * 0.20f, botonY + 186f, ancho * 0.60f, 52f),
+            new Rect(x + ancho * 0.24f, tarjetaY + 226f, ancho * 0.52f, 52f),
             "SALIR",
             botonSalir))
         {
@@ -110,19 +128,31 @@ public class MenuInicio : MonoBehaviour
         }
 
         GUI.Label(
-            new Rect(x, y + altoPanel - 58f, ancho, 36f),
-            "Elige un nivel para comenzar",
+            new Rect(x, y + altoPanel - 48f, ancho, 34f),
+            "Puedes volver al menu desde cada nivel",
             subtitulo
         );
+    }
+
+    private void DibujarTarjeta(Rect area, string nivel, string descripcion, GUIStyle estilo, System.Action accion)
+    {
+        GUI.DrawTexture(area, panelSecundario);
+
+        Rect boton = new Rect(area.x + 12f, area.y + 12f, area.width - 24f, 68f);
+
+        if (GUI.Button(boton, nivel + "  -  " + descripcion.ToUpper(), estilo))
+            accion?.Invoke();
     }
 
     private void DibujarFondo()
     {
         GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), cielo);
 
-        DibujarNube(Screen.width * 0.10f, Screen.height * 0.14f, 1.0f);
-        DibujarNube(Screen.width * 0.72f, Screen.height * 0.21f, 0.85f);
-        DibujarNube(Screen.width * 0.82f, Screen.height * 0.08f, 0.55f);
+        float movimiento = Mathf.Repeat(Time.unscaledTime * 12f, Screen.width + 220f);
+
+        DibujarNube(Screen.width * 0.08f + movimiento * 0.08f, Screen.height * 0.14f, 1.0f);
+        DibujarNube(Screen.width * 0.68f - movimiento * 0.05f, Screen.height * 0.20f, 0.82f);
+        DibujarNube(Screen.width * 0.80f, Screen.height * 0.08f, 0.55f);
 
         float pisoY = Screen.height - 72f;
         GUI.DrawTexture(new Rect(0, pisoY, Screen.width, 72f), suelo);
@@ -161,17 +191,23 @@ public class MenuInicio : MonoBehaviour
         titulo = new GUIStyle(GUI.skin.label);
         titulo.alignment = TextAnchor.MiddleCenter;
         titulo.fontStyle = FontStyle.Bold;
-        titulo.fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height * 0.075f, 40f, 68f));
+        titulo.fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height * 0.078f, 42f, 72f));
         titulo.normal.textColor = new Color(1f, 0.84f, 0.08f);
 
         sombraTitulo = new GUIStyle(titulo);
-        sombraTitulo.normal.textColor = new Color(0.45f, 0.05f, 0.04f);
+        sombraTitulo.normal.textColor = new Color(0.42f, 0.04f, 0.03f);
 
         subtitulo = new GUIStyle(GUI.skin.label);
         subtitulo.alignment = TextAnchor.MiddleCenter;
         subtitulo.fontStyle = FontStyle.Bold;
-        subtitulo.fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height * 0.027f, 17f, 25f));
+        subtitulo.fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height * 0.024f, 16f, 23f));
         subtitulo.normal.textColor = Color.white;
+
+        etiqueta = new GUIStyle(GUI.skin.label);
+        etiqueta.alignment = TextAnchor.MiddleCenter;
+        etiqueta.fontStyle = FontStyle.Bold;
+        etiqueta.fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height * 0.020f, 13f, 18f));
+        etiqueta.normal.textColor = new Color(0.15f, 0.08f, 0.02f);
 
         botonRojo = CrearEstiloBoton(rojo, rojoHover);
         botonVerde = CrearEstiloBoton(verde, verdeHover);
@@ -188,7 +224,7 @@ public class MenuInicio : MonoBehaviour
     {
         GUIStyle estilo = new GUIStyle(GUI.skin.button);
         estilo.fontStyle = FontStyle.Bold;
-        estilo.fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height * 0.032f, 19f, 29f));
+        estilo.fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height * 0.030f, 18f, 28f));
         estilo.normal.textColor = Color.white;
         estilo.hover.textColor = Color.white;
         estilo.active.textColor = Color.white;
