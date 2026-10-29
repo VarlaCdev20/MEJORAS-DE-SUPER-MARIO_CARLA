@@ -6,9 +6,16 @@ public class SideScrolling : MonoBehaviour
     private new Camera camera;
     private Transform player;
 
+    private float velocidadX;
+    private float ultimoPlayerX;
+
     public float height = 6.5f;
     public float undergroundHeight = -9.5f;
     public float undergroundThreshold = 0f;
+
+    [Header("Seguimiento suave")]
+    public float smoothTime = 0.12f;
+    public float lookAhead = 2.2f;
 
     private void Awake()
     {
@@ -32,6 +39,7 @@ public class SideScrolling : MonoBehaviour
         if (encontrado != null)
         {
             player = encontrado.transform;
+            ultimoPlayerX = player.position.x;
             return;
         }
 
@@ -39,12 +47,16 @@ public class SideScrolling : MonoBehaviour
         if (componentePlayer != null)
         {
             player = componentePlayer.transform;
+            ultimoPlayerX = player.position.x;
             return;
         }
 
         GameObject mario = GameObject.Find("Mario");
         if (mario != null)
+        {
             player = mario.transform;
+            ultimoPlayerX = player.position.x;
+        }
     }
 
     private void LateUpdate()
@@ -57,10 +69,27 @@ public class SideScrolling : MonoBehaviour
                 return;
         }
 
+        float movimiento = player.position.x - ultimoPlayerX;
+        float adelanto = movimiento > 0.01f ? lookAhead : 0f;
+
+        float objetivoX = Mathf.Max(
+            transform.position.x,
+            player.position.x + adelanto
+        );
+
+        float nuevoX = Mathf.SmoothDamp(
+            transform.position.x,
+            objetivoX,
+            ref velocidadX,
+            smoothTime
+        );
+
         Vector3 cameraPosition = transform.position;
-        cameraPosition.x = Mathf.Max(cameraPosition.x, player.position.x);
+        cameraPosition.x = Mathf.Max(transform.position.x, nuevoX);
         cameraPosition.z = -10f;
         transform.position = cameraPosition;
+
+        ultimoPlayerX = player.position.x;
     }
 
     public void SetUnderground(bool underground)
@@ -69,5 +98,7 @@ public class SideScrolling : MonoBehaviour
         cameraPosition.y = underground ? undergroundHeight : height;
         cameraPosition.z = -10f;
         transform.position = cameraPosition;
+
+        velocidadX = 0f;
     }
 }

@@ -24,8 +24,6 @@ public class CamaraNivel2 : MonoBehaviour
             objetoCamara.tag = "MainCamera";
 
             camara = objetoCamara.AddComponent<Camera>();
-            camara.orthographic = true;
-            camara.orthographicSize = 6.5f;
             camara.transform.position = new Vector3(0f, 6.5f, -10f);
             creada = true;
 
@@ -35,23 +33,36 @@ public class CamaraNivel2 : MonoBehaviour
         else
         {
             camara.gameObject.tag = "MainCamera";
-            camara.orthographic = true;
 
             Vector3 posicion = camara.transform.position;
             posicion.z = -10f;
             camara.transform.position = posicion;
         }
 
+        camara.orthographic = true;
+
         if (escena == "1-2")
-            camara.backgroundColor = new Color(0.03f, 0.03f, 0.10f, 1f);
+        {
+            // Un poco mas abierta para poder leer mejor los obstaculos.
+            camara.orthographicSize = 7f;
+            camara.backgroundColor = new Color(0.025f, 0.025f, 0.085f, 1f);
+        }
+        else
+        {
+            camara.orthographicSize = 6.5f;
+        }
 
         SideScrolling seguimiento = camara.GetComponent<SideScrolling>();
 
         if (seguimiento == null)
             seguimiento = camara.gameObject.AddComponent<SideScrolling>();
 
+        seguimiento.smoothTime = escena == "1-2" ? 0.10f : 0.12f;
+        seguimiento.lookAhead = escena == "1-2" ? 2.6f : 2.2f;
+
         if (escena == "1-2")
         {
+            // Mantenemos la altura real de tu nivel subterraneo.
             seguimiento.height = camara.transform.position.y;
             seguimiento.undergroundHeight = camara.transform.position.y;
         }
