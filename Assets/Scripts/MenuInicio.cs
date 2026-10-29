@@ -13,6 +13,11 @@ public class MenuInicio : MonoBehaviour
         CargarNivel("1-2");
     }
 
+    public void IrNivel3()
+    {
+        CargarNivel("1-3");
+    }
+
     public void Salir()
     {
 #if UNITY_EDITOR
