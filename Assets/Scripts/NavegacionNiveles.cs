@@ -10,7 +10,7 @@ public class NavegacionNiveles : MonoBehaviour
     {
         string escena = SceneManager.GetActiveScene().name;
 
-        if (escena != "1-1" && escena != "1-2")
+        if (escena != "1-1" && escena != "1-2" && escena != "1-3")
             return;
 
         if (FindFirstObjectByType<NavegacionNiveles>() != null)

@@ -70,6 +70,11 @@ public class FlagPole : MonoBehaviour
             mundoDestino = 1;
             nivelDestino = 2;
         }
+        else if (escenaActual == "1-2")
+        {
+            mundoDestino = 1;
+            nivelDestino = 3;
+        }
 
         if (GameManager.Instance != null)
         {
