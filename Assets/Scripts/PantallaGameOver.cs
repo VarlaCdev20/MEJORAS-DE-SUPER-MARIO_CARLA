@@ -2,7 +2,35 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 public class PantallaGameOver : MonoBehaviour
 {
-    private void Awake() { Time.timeScale = 1f; }
+    private RectTransform titulo;
+    private float inicio;
+    private void Awake() { Time.timeScale = 1f; inicio = Time.unscaledTime; }
+    private void Start()
+    {
+        GameObject canvas = GameObject.Find("GameOverEditableCanvas");
+        if (canvas != null)
+        {
+            Transform t = canvas.transform.Find("PanelGameOver/TituloGameOver");
+            if (t != null) titulo = t.GetComponent<RectTransform>();
+        }
+        AudioSource fuente = GetComponent<AudioSource>();
+        if (fuente == null) fuente = gameObject.AddComponent<AudioSource>();
+        fuente.playOnAwake = false;
+        const int frecuencia = 22050;
+        int muestras = frecuencia;
+        float[] datos = new float[muestras];
+        float[] notas = { 392f, 329.63f, 261.63f };
+        for (int i=0; i<muestras; i++)
+        {
+            float t = (float)i/frecuencia;
+            int paso = Mathf.Min(2,(int)(t*3f));
+            float envolvente = Mathf.Clamp01((1f/3f - (t-paso/3f))*7f);
+            datos[i] = Mathf.Sin(2f*Mathf.PI*notas[paso]*t)*envolvente*0.12f;
+        }
+        AudioClip clip = AudioClip.Create("DerrotaOriginal",muestras,1,frecuencia,false);
+        clip.SetData(datos,0);
+        fuente.PlayOneShot(clip);
+    }
     public void Reintentar()
     {
         if (GameManager.Instance != null) GameManager.Instance.ReintentarDespuesDeGameOver();
@@ -24,6 +52,11 @@ public class PantallaGameOver : MonoBehaviour
     }
     private void Update()
     {
+        if (titulo != null)
+        {
+            float escala = 1f + Mathf.Sin((Time.unscaledTime-inicio)*2.8f)*0.03f;
+            titulo.localScale = new Vector3(escala,escala,1f);
+        }
         if (Input.GetKeyDown(KeyCode.R)) Reintentar();
         if (Input.GetKeyDown(KeyCode.Escape)) VolverAlMenu();
     }
