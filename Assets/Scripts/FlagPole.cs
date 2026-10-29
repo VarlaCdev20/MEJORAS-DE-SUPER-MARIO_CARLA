@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class FlagPole : MonoBehaviour
 {
@@ -10,40 +11,97 @@ public class FlagPole : MonoBehaviour
     public int nextWorld = 1;
     public int nextStage = 1;
 
+    private bool nivelCompletado;
+
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Player"))
-        {
+        if (nivelCompletado || !other.CompareTag("Player"))
+            return;
+
+        nivelCompletado = true;
+
+        if (flag != null && poleBottom != null)
             StartCoroutine(MoveTo(flag, poleBottom.position));
-            StartCoroutine(LevelCompleteSequence(other.transform));
-        }
+
+        StartCoroutine(LevelCompleteSequence(other.transform));
     }
 
     private IEnumerator LevelCompleteSequence(Transform player)
     {
-        player.GetComponent<PlayerMovement>().enabled = false;
+        PlayerMovement movimiento = player.GetComponent<PlayerMovement>();
 
-        yield return MoveTo(player, poleBottom.position);
-        yield return MoveTo(player, player.position + Vector3.right);
-        yield return MoveTo(player, player.position + Vector3.right + Vector3.down);
-        yield return MoveTo(player, castle.position);
+        if (movimiento != null)
+            movimiento.enabled = false;
+
+        if (poleBottom != null)
+        {
+            yield return MoveTo(player, poleBottom.position);
+            yield return MoveTo(player, player.position + Vector3.right);
+            yield return MoveTo(player, player.position + Vector3.right + Vector3.down);
+        }
+
+        if (castle != null)
+        {
+            yield return MoveTo(player, castle.position);
+        }
+        else
+        {
+            // Si el castillo pierde su referencia, el nivel igual termina.
+            yield return MoveTo(player, player.position + Vector3.right * 2f);
+        }
 
         player.gameObject.SetActive(false);
 
-        yield return new WaitForSeconds(2f);
+        yield return new WaitForSeconds(1.25f);
 
-        GameManager.Instance.LoadLevel(nextWorld, nextStage);
+        CargarSiguienteNivel();
+    }
+
+    private void CargarSiguienteNivel()
+    {
+        string escenaActual = SceneManager.GetActiveScene().name;
+
+        // La entrega necesita que 1-1 conecte siempre con 1-2.
+        int mundoDestino = nextWorld;
+        int nivelDestino = nextStage;
+
+        if (escenaActual == "1-1")
+        {
+            mundoDestino = 1;
+            nivelDestino = 2;
+        }
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.LoadLevel(mundoDestino, nivelDestino);
+        }
+        else
+        {
+            string nombreEscena = $"{mundoDestino}-{nivelDestino}";
+
+            if (Application.CanStreamedLevelBeLoaded(nombreEscena))
+                SceneManager.LoadScene(nombreEscena);
+            else
+                Debug.LogError("No se encontro la escena " + nombreEscena + " en el Build.");
+        }
     }
 
     private IEnumerator MoveTo(Transform subject, Vector3 position)
     {
+        if (subject == null)
+            yield break;
+
         while (Vector3.Distance(subject.position, position) > 0.125f)
         {
-            subject.position = Vector3.MoveTowards(subject.position, position, speed * Time.deltaTime);
+            subject.position = Vector3.MoveTowards(
+                subject.position,
+                position,
+                speed * Time.deltaTime
+            );
+
             yield return null;
         }
 
         subject.position = position;
     }
-
 }
