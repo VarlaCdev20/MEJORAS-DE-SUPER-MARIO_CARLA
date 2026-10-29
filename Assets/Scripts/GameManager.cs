@@ -10,29 +10,31 @@ public class GameManager : MonoBehaviour
     public int lives { get; private set; }
     public int coins { get; private set; }
 
+    private bool procesandoMuerte;
+
     private void Awake()
     {
-        if (Instance != null) {
-            DestroyImmediate(gameObject);
-        } else {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
         }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
     private void OnDestroy()
     {
-        if (Instance == this) {
+        if (Instance == this)
             Instance = null;
-        }
     }
 
     private void Start()
     {
         Application.targetFrameRate = 60;
 
-        // Si se entra desde el menu directamente a 1-1 o 1-2,
-        // iniciamos las vidas sin forzar siempre el nivel 1.
+        // Permite iniciar una escena directamente en Unity para probar.
         if (lives <= 0)
         {
             lives = 3;
@@ -58,25 +60,63 @@ public class GameManager : MonoBehaviour
 
     public void NewGame()
     {
+        IniciarPartida(1, 1);
+    }
+
+    public void IniciarPartida(int mundo, int nivel)
+    {
+        CancelInvoke(nameof(ResetLevel));
+        procesandoMuerte = false;
         lives = 3;
         coins = 0;
-
-        LoadLevel(1, 1);
+        LoadLevel(mundo, nivel);
     }
 
     public void GameOver()
     {
-        // TODO: show game over screen
+        CancelInvoke(nameof(ResetLevel));
+        procesandoMuerte = false;
+        lives = 0;
+        Time.timeScale = 1f;
 
-        NewGame();
+        if (Application.CanStreamedLevelBeLoaded("GameOver"))
+            SceneManager.LoadScene("GameOver", LoadSceneMode.Single);
+        else
+            Debug.LogError("Falta agregar GameOver.unity en Build Profiles.");
     }
 
-    public void LoadLevel(int world, int stage)
+    public void ReintentarDespuesDeGameOver()
     {
-        this.world = world;
-        this.stage = stage;
+        int mundo = world > 0 ? world : 1;
+        int nivel = stage > 0 ? stage : 1;
+        IniciarPartida(mundo, nivel);
+    }
 
-        SceneManager.LoadScene($"{world}-{stage}");
+    public void VolverAlMenu()
+    {
+        CancelInvoke(nameof(ResetLevel));
+        procesandoMuerte = false;
+        Time.timeScale = 1f;
+
+        if (Application.CanStreamedLevelBeLoaded("Menu"))
+            SceneManager.LoadScene("Menu", LoadSceneMode.Single);
+        else
+            Debug.LogError("Falta agregar Menu.unity en Build Profiles.");
+    }
+
+    public void LoadLevel(int mundo, int nivel)
+    {
+        CancelInvoke(nameof(ResetLevel));
+        procesandoMuerte = false;
+        world = mundo;
+        stage = nivel;
+        Time.timeScale = 1f;
+
+        string escena = $"{mundo}-{nivel}";
+        if (Application.CanStreamedLevelBeLoaded(escena))
+            SceneManager.LoadScene(escena, LoadSceneMode.Single);
+        else
+            Debug.LogError("Falta agregar " + escena + " en Build Profiles.");
     }
 
     public void NextLevel()
@@ -86,28 +126,33 @@ public class GameManager : MonoBehaviour
 
     public void ResetLevel(float delay)
     {
+        // Evita descontar varias vidas por una misma muerte.
+        if (procesandoMuerte)
+            return;
+
+        procesandoMuerte = true;
         CancelInvoke(nameof(ResetLevel));
-        Invoke(nameof(ResetLevel), delay);
+        Invoke(nameof(ResetLevel), Mathf.Max(0f, delay));
     }
 
     public void ResetLevel()
     {
-        lives--;
+        CancelInvoke(nameof(ResetLevel));
+        lives = Mathf.Max(0, lives - 1);
 
-        if (lives > 0) {
+        if (lives > 0)
             LoadLevel(world, stage);
-        } else {
+        else
             GameOver();
-        }
     }
 
     public void AddCoin()
     {
         coins++;
 
-        if (coins == 100)
+        if (coins >= 100)
         {
-            coins = 0;
+            coins -= 100;
             AddLife();
         }
     }
